@@ -1,0 +1,32 @@
+services: 
+    user-service:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: notebookum-user:latest
+        restart: unless-stopped
+        # LOAD BALANCER PATTERN
+        deploy:
+            replicas: 2
+        networks:
+            - notebookum-network
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.user.rule=Host(`user.internal`)"
+            - "traefik.http.services.user.loadbalancer.server.port=5004"
+            # CIRCUIT BREAKER PATTERN
+            - "traefik.http.middlewares.cb-user.circuitbreaker.expression=NetworkErrorRatio() > 0.5"
+            # BULKHEAD PATTERN
+            - "traefik.http.middlewares.bulkhead-user.inflightreq.amount=30"
+            - "traefik.http.routers.user.middlewares=cb-user,bulkhead-user"
+        volumes:
+            - ./app:/app/app:ro
+            - ./main.py:/app/main.py:ro
+        environment:
+            - FLASK_ENV=development
+            - PORT=5004
+            - PERSISTENCE_URL=http://persistence:5003
+
+networks:
+    notebookum-network:
+        external: true
