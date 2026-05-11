@@ -9,23 +9,27 @@ services:
         deploy:
             replicas: 2
         networks:
-            - notebookum-network
+            notebookum-network:
+                aliases:
+                    - users.universidad.localhost
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.user.rule=Host(`user.internal`)"
+            - "traefik.http.routers.user.rule=Host(`users.universidad.localhost`)"
+            - "traefik.http.routers.user.entryPoints=https"
+            - "traefik.http.routers.user.tls=true"
             - "traefik.http.services.user.loadbalancer.server.port=5004"
             # CIRCUIT BREAKER PATTERN
-            - "traefik.http.middlewares.cb-user.circuitbreaker.expression=NetworkErrorRatio() > 0.5"
+            - "traefik.http.middlewares.cb-user.circuitbreaker.expression=LatencyAtQuantileMS(50.0) > 100 || ResponseCodeRatio(500, 600, 0, 600) > 0.30 || NetworkErrorRatio() > 0.10"
             # BULKHEAD PATTERN
-            - "traefik.http.middlewares.bulkhead-user.inflightreq.amount=30"
+            - "traefik.http.middlewares.bulkhead-user.inflightreq.amount=10"
             - "traefik.http.routers.user.middlewares=cb-user,bulkhead-user"
         volumes:
             - ./app:/app/app:ro
             - ./main.py:/app/main.py:ro
         environment:
-            - FLASK_ENV=development
+            - FLASK_ENV=production
             - PORT=5004
-            - PERSISTENCE_URL=http://persistence:5003
+            - PERSISTENCE_URL=https://persistence.universidad.localhost
 
 networks:
     notebookum-network:
