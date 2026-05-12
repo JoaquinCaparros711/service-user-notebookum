@@ -3,7 +3,7 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
-        image: notebookum-user:latest
+        image: notebookum-user:v1.0.0
         restart: unless-stopped
         # LOAD BALANCER PATTERN
         deploy:
