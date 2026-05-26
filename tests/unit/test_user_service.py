@@ -71,7 +71,8 @@ class TestUserServiceCreateUser:
         mock_post.assert_called_once_with(
             "http://persistence:5003/api/v1/db/users",
             json={"email": "create@example.com", "nombre": "Create User"},
-            timeout=5
+            timeout=5,
+            verify=False
         )
 
     def test_create_user_duplicate_email(self, app, mocker):

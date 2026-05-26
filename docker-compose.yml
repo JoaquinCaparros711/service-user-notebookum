@@ -22,8 +22,7 @@ services:
             - "traefik.http.routers.user.middlewares=cb-user,bulkhead-user"
         environment:
             - FLASK_ENV=production
-            - PORT=5000
-            - PERSISTENCE_URL=https://persistence.universidad.localhost
+            - PERSISTENCE_URL=http://persistence.universidad.localhost:5000
 
 networks:
     notebookum-network:
