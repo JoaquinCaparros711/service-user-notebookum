@@ -1,13 +1,6 @@
 services: 
-    user-service:
-        build:
-            context: .
-            dockerfile: Dockerfile
-<<<<<<< Updated upstream
+    user:
         image: notebookum-user:v1.0.0
-=======
-        image: notebookum-user:latest #versionado 
->>>>>>> Stashed changes
         restart: unless-stopped
         # LOAD BALANCER PATTERN
         deploy:
@@ -18,7 +11,6 @@ services:
                     - users.universidad.localhost
         labels:
             - "traefik.enable=true"
-<<<<<<< Updated upstream
             - "traefik.http.routers.user.rule=Host(`users.universidad.localhost`)"
             - "traefik.http.routers.user.entryPoints=https"
             - "traefik.http.routers.user.tls=true"
@@ -28,20 +20,6 @@ services:
             # BULKHEAD PATTERN
             - "traefik.http.middlewares.bulkhead-user.inflightreq.amount=10"
             - "traefik.http.routers.user.middlewares=cb-user,bulkhead-user"
-        volumes:
-            - ./app:/app/app:ro
-            - ./main.py:/app/main.py:ro
-=======
-            - "traefik.http.routers.user-service.rule=Host(`users.universidad.localhost`)"
-            - "traefik.http.services.user-service.loadbalancer.server.port=5000"
-            # CIRCUIT BREAKER PATTERN , agregar 2 mas, latencia / contador de errores http
-            - "traefik.http.middlewares.user-service.circuitbreaker.expression=NetworkErrorRatio() > 0.5"
-            - "traefik.http.middlewares.user-service.circuitbreaker.expression=LatencyAtQuantileMS(50.0) > 100"
-            - "traefik.http.middlewares.user-service.circuitbreaker.expression=ResponseCodeRatio(500, 600, 0, 600) > 0.30 || NetworkErrorRatio() > 0.10"
-            # BULKHEAD PATTERN revisar#
-            - "traefik.http.middlewares.user-service.inflightreq.amount=10"
-            #replicar en los demas microservicios 
->>>>>>> Stashed changes
         environment:
             - FLASK_ENV=production
             - PORT=5000
