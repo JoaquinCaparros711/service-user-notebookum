@@ -59,7 +59,7 @@ class UserService:
             response = requests.post(
                 f"{persistence_url}/api/v1/db/users",
                 json={"email": email, "nombre": nombre},
-                timeout=5
+                timeout=5, verify=False
             )
             
             if response.status_code == 409:
