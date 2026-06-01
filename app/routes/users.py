@@ -16,10 +16,10 @@ def create_user():
         # Validate user data using UserService
         validated_data = UserService.validate_user_data(data)
         email = validated_data["email"]
-        nombre = validated_data["nombre"]
+        name = validated_data["name"]
 
         # Create user using UserService
-        user_data = UserService.create_user(email, nombre)
+        user_data = UserService.create_user(email, name)
 
         response = jsonify(user_data)
         response.status_code = 201

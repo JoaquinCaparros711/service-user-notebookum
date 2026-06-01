@@ -26,30 +26,30 @@ class UserService:
             raise ValidationError("Request body must be valid JSON")
 
         email = data.get("email", "").strip()
-        nombre = data.get("nombre", "").strip()
+        name = data.get("name", "").strip()
 
         if not email:
             raise ValidationError("Email is required")
 
-        if not nombre:
-            raise ValidationError("Name (nombre) is required")
+        if not name:
+            raise ValidationError("Name is required")
 
         # RFC 5322 simplified email validation pattern
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_pattern, email):
             raise ValidationError("Email format is invalid")
 
-        # Validate nombre length (reasonable bounds)
-        if len(nombre) > 255:
-            raise ValidationError("Name (nombre) must not exceed 255 characters")
+        # Validate name length (reasonable bounds)
+        if len(name) > 255:
+            raise ValidationError("Name must not exceed 255 characters")
 
-        if len(nombre) < 2:
-            raise ValidationError("Name (nombre) must be at least 2 characters")
+        if len(name) < 2:
+            raise ValidationError("Name must be at least 2 characters")
 
-        return {"email": email, "nombre": nombre}
+        return {"email": email, "name": name}
 
     @staticmethod
-    def create_user(email: str, nombre: str) -> Dict[str, Any]:
+    def create_user(email: str, name: str) -> Dict[str, Any]:
         """
         Create a new user by delegating to Persistence microservice.
         """
@@ -58,7 +58,7 @@ class UserService:
         try:
             response = requests.post(
                 f"{persistence_url}/api/v1/db/users",
-                json={"email": email, "nombre": nombre},
+                json={"email": email, "name": name},
                 timeout=5, verify=False
             )
             
