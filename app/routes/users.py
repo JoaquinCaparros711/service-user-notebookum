@@ -10,6 +10,10 @@ users_bp = Blueprint("users", __name__, url_prefix="/api/v1/users")
 @users_bp.post("")
 def create_user():
     """Create a new user"""
+    import sys
+    print("USER SERVICE RECEIVED HEADERS:", dict(request.headers), file=sys.stderr)
+    print("USER SERVICE RECEIVED DATA:", request.data, file=sys.stderr)
+    print("USER SERVICE RECEIVED JSON:", request.get_json(silent=True), file=sys.stderr)
     data = request.get_json()
 
     try:

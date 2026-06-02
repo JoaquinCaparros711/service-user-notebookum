@@ -9,6 +9,7 @@ dependencies = [
     "requests>=2.31",
     "granian>=1.0",
     "python-dotenv>=1.0",
+    "redis>=5.0",
 ]
 
 [dependency-groups]

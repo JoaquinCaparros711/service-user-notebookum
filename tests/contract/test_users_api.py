@@ -1,6 +1,14 @@
 """Contract tests for POST /api/v1/users endpoint"""
 
 import pytest
+import json
+
+@pytest.fixture(autouse=True)
+def mock_redis(mocker):
+    """Automatically mock Redis client for all contract tests"""
+    mock_client = mocker.Mock()
+    mocker.patch("app.services.user_service.UserService._get_redis_client", return_value=mock_client)
+    return mock_client
 
 @pytest.mark.contract
 class TestPostUsers:
@@ -13,7 +21,7 @@ class TestPostUsers:
         mock_response.json.return_value = {
             "id": 1,
             "email": "test@example.com",
-            "nombre": "Test User",
+            "name": "Test User",
             "created_at": "2023-01-01",
             "updated_at": "2023-01-01"
         }
@@ -21,7 +29,7 @@ class TestPostUsers:
 
         user_data = {
             "email": "test@example.com",
-            "nombre": "Test User"
+            "name": "Test User"
         }
 
         response = client.post("/api/v1/users", json=user_data)
@@ -31,11 +39,11 @@ class TestPostUsers:
         assert data is not None
         assert "id" in data
         assert data["email"] == "test@example.com"
-        assert data["nombre"] == "Test User"
+        assert data["name"] == "Test User"
 
     def test_create_user_missing_email(self, client):
         """Test user creation fails when email is missing (no upstream call expected)"""
-        user_data = {"nombre": "Test User"}
+        user_data = {"name": "Test User"}
         response = client.post("/api/v1/users", json=user_data)
 
         assert response.status_code == 400
@@ -46,15 +54,15 @@ class TestPostUsers:
         assert data["status"] == 400
         assert "email" in data["detail"].lower()
         
-    def test_create_user_missing_nombre(self, client):
-        """Test user creation fails when nombre is missing"""
+    def test_create_user_missing_name(self, client):
+        """Test user creation fails when name is missing"""
         user_data = {"email": "test@example.com"}
         response = client.post("/api/v1/users", json=user_data)
 
         assert response.status_code == 400
         data = response.get_json()
         assert data["status"] == 400
-        assert "nombre" in data["detail"].lower()
+        assert "name" in data["detail"].lower()
 
     def test_create_user_duplicate_email(self, client, mocker):
         """Test user creation fails when email already exists upstream"""
@@ -64,7 +72,7 @@ class TestPostUsers:
 
         duplicate_user = {
             "email": "duplicate@example.com",
-            "nombre": "Duplicate User"
+            "name": "Duplicate User"
         }
         response2 = client.post("/api/v1/users", json=duplicate_user)
 
@@ -87,7 +95,7 @@ class TestGetUsers:
         mock_response.json.return_value = {
             "id": 1,
             "email": "get_test@example.com",
-            "nombre": "Get Test User"
+            "name": "Get Test User"
         }
         mocker.patch("requests.get", return_value=mock_response)
 
@@ -118,7 +126,7 @@ class TestRFC9457Compliance:
 
     def test_error_response_content_type_bad_request(self, client):
         """Test that error responses have application/problem+json content-type"""
-        user_data = {"nombre": "Test User"}
+        user_data = {"name": "Test User"}
         response = client.post("/api/v1/users", json=user_data)
         assert response.content_type == "application/problem+json"
         assert response.status_code == 400

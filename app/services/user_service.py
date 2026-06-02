@@ -2,6 +2,8 @@
 
 import re
 import requests
+import json
+import redis
 from typing import Optional, Dict, Any
 from flask import current_app
 
@@ -18,6 +20,20 @@ class UpstreamError(Exception):
 
 class UserService:
     """Service layer for user operations"""
+
+    _redis_client = None
+
+    @classmethod
+    def _get_redis_client(cls):
+        """Lazy loader for Redis client with fault tolerance"""
+        if cls._redis_client is None:
+            try:
+                redis_url = current_app.config.get("REDIS_URL")
+                if redis_url:
+                    cls._redis_client = redis.Redis.from_url(redis_url, decode_responses=True)
+            except Exception as e:
+                current_app.logger.warning(f"Could not connect to Redis: {e}. Caching disabled.")
+        return cls._redis_client
 
     @staticmethod
     def validate_user_data(data: Optional[Dict[str, Any]]) -> Dict[str, str]:
@@ -52,6 +68,7 @@ class UserService:
     def create_user(email: str, name: str) -> Dict[str, Any]:
         """
         Create a new user by delegating to Persistence microservice.
+        Also performs write-through caching into Redis.
         """
         persistence_url = current_app.config.get("PERSISTENCE_URL")
         
@@ -68,7 +85,20 @@ class UserService:
                 error_msg = response.json().get("detail", "Error in persistence service")
                 raise UpstreamError(error_msg, response.status_code)
                 
-            return response.json()
+            user_data = response.json()
+            user_id = user_data.get("id")
+
+            # Write-Through Caching: Cache user immediately upon creation (5 minutes TTL)
+            if user_id:
+                try:
+                    r = UserService._get_redis_client()
+                    if r:
+                        r.setex(f"user:{user_id}", 300, json.dumps(user_data))
+                        current_app.logger.info(f"Redis cache write-through success for user:{user_id}")
+                except Exception as cache_err:
+                    current_app.logger.warning(f"Failed to write to Redis cache: {cache_err}")
+
+            return user_data
             
         except requests.exceptions.RequestException as e:
             raise UpstreamError(f"Failed to connect to persistence service: {str(e)}", 503)
@@ -76,8 +106,20 @@ class UserService:
     @staticmethod
     def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
         """
-        Retrieve a user by delegating to Persistence microservice.
+        Retrieve a user by checking Redis cache first, then falling back to Persistence.
         """
+        # Try fetching from Redis cache first
+        try:
+            r = UserService._get_redis_client()
+            if r:
+                cached_user = r.get(f"user:{user_id}")
+                if cached_user:
+                    current_app.logger.info(f"Redis cache HIT for user:{user_id}")
+                    return json.loads(cached_user)
+                current_app.logger.info(f"Redis cache MISS for user:{user_id}")
+        except Exception as cache_err:
+            current_app.logger.warning(f"Failed to read from Redis cache: {cache_err}")
+
         persistence_url = current_app.config.get("PERSISTENCE_URL")
         
         try:
@@ -92,7 +134,18 @@ class UserService:
                 error_msg = response.json().get("detail", "Error in persistence service")
                 raise UpstreamError(error_msg, response.status_code)
                 
-            return response.json()
+            user_data = response.json()
+
+            # Cache the fetched user in Redis (5 minutes TTL)
+            try:
+                r = UserService._get_redis_client()
+                if r:
+                    r.setex(f"user:{user_id}", 300, json.dumps(user_data))
+                    current_app.logger.info(f"Redis cache SET success for user:{user_id}")
+            except Exception as cache_err:
+                current_app.logger.warning(f"Failed to save to Redis cache: {cache_err}")
+
+            return user_data
             
         except requests.exceptions.RequestException as e:
             raise UpstreamError(f"Failed to connect to persistence service: {str(e)}", 503)

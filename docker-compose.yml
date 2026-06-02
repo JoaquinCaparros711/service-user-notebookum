@@ -23,6 +23,7 @@ services:
         environment:
             - FLASK_ENV=production
             - PERSISTENCE_URL=http://persistence.universidad.localhost:5000
+            - REDIS_URL=redis://redis:6379/0
 
 networks:
     notebookum-network:
