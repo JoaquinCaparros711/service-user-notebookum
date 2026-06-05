@@ -77,7 +77,7 @@ class TestUserServiceCreateUser:
         assert result["id"] == 1
         assert result["email"] == "create@example.com"
         mock_post.assert_called_once_with(
-            "http://persistence:5003/api/v1/db/users",
+            "http://persistence:5003/api/v1/users",
             json={"email": "create@example.com", "name": "Create User"},
             timeout=5,
             verify=False
@@ -148,7 +148,7 @@ class TestUserServiceGetUserById:
 
         assert result["id"] == 1
         assert result["email"] == "get@example.com"
-        mock_get.assert_called_once_with("http://persistence:5003/api/v1/db/users/1", timeout=5)
+        mock_get.assert_called_once_with("http://persistence:5003/api/v1/users/1", timeout=5)
         # Verify it was saved to Redis
         mock_redis.setex.assert_called_once_with("user:1", 300, json.dumps(result))
 

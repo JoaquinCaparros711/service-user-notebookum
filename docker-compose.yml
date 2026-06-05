@@ -1,6 +1,6 @@
-services: 
+services:
     user:
-        image: notebookum-user:v1.0.0
+        image: notebookum-user:v1.0.2
         restart: unless-stopped
         # LOAD BALANCER PATTERN
         deploy:
@@ -22,9 +22,9 @@ services:
             - "traefik.http.routers.user.middlewares=cb-user,bulkhead-user"
         environment:
             - FLASK_ENV=production
-            - PERSISTENCE_URL=http://persistence.universidad.localhost:5000
-            - REDIS_URL=redis://redis:6379/0
-
+            - PERSISTENCE_URL=${PERSISTENCE_URL}
+            - REDIS_URL=${REDIS_URL}
+#TODO arriba
 networks:
     notebookum-network:
         external: true

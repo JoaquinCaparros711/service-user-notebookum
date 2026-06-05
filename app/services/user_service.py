@@ -74,7 +74,7 @@ class UserService:
         
         try:
             response = requests.post(
-                f"{persistence_url}/api/v1/db/users",
+                f"{persistence_url}/api/v1/users",
                 json={"email": email, "name": name},
                 timeout=5, verify=False
             )
@@ -124,7 +124,7 @@ class UserService:
         
         try:
             response = requests.get(
-                f"{persistence_url}/api/v1/db/users/{user_id}",
+                f"{persistence_url}/api/v1/users/{user_id}",
                 timeout=5
             )
             

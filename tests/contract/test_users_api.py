@@ -140,3 +140,40 @@ class TestRFC9457Compliance:
         response = client.get("/api/v1/users/99999")
         assert response.content_type == "application/problem+json"
         assert response.status_code == 404
+
+
+@pytest.mark.contract
+class TestPingRedis:
+    """Tests for GET /api/v1/users/ping-redis"""
+
+    def test_ping_redis_healthy(self, client, mock_redis):
+        """Test healthy Redis ping response"""
+        mock_redis.ping.return_value = True
+
+        response = client.get("/api/v1/users/ping-redis")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "healthy"
+        assert "Successfully" in data["message"]
+        mock_redis.ping.assert_called_once()
+
+    def test_ping_redis_unhealthy(self, client, mock_redis):
+        """Test unhealthy Redis ping response when ping returns False"""
+        mock_redis.ping.return_value = False
+
+        response = client.get("/api/v1/users/ping-redis")
+        assert response.status_code == 500
+        data = response.get_json()
+        assert data["status"] == "unhealthy"
+        assert "Could not connect" in data["message"]
+
+    def test_ping_redis_exception(self, client, mock_redis):
+        """Test unhealthy Redis ping response when exception is raised"""
+        mock_redis.ping.side_effect = Exception("Connection refused")
+
+        response = client.get("/api/v1/users/ping-redis")
+        assert response.status_code == 500
+        data = response.get_json()
+        assert data["status"] == "unhealthy"
+        assert "Redis error: Connection refused" in data["message"]
+
