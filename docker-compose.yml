@@ -1,5 +1,8 @@
 services:
     user:
+        build:
+            context: .
+            dockerfile: Dockerfile
         image: notebookum-user:v1.0.2
         restart: unless-stopped
         # LOAD BALANCER PATTERN
@@ -16,14 +19,19 @@ services:
             - "traefik.http.routers.user.tls=true"
             - "traefik.http.services.user.loadbalancer.server.port=5000"
             # CIRCUIT BREAKER PATTERN
-            - "traefik.http.middlewares.cb-user.circuitbreaker.expression=LatencyAtQuantileMS(50.0) > 100 || ResponseCodeRatio(500, 600, 0, 600) > 0.30 || NetworkErrorRatio() > 0.10"
+            - "traefik.http.middlewares.cb-user.circuitbreaker.expression=LatencyAtQuantileMS(50.0) > 2000 || ResponseCodeRatio(500, 600, 0, 600) > 0.30 || NetworkErrorRatio() > 0.10"
             # BULKHEAD PATTERN
             - "traefik.http.middlewares.bulkhead-user.inflightreq.amount=10"
-            - "traefik.http.routers.user.middlewares=cb-user,bulkhead-user"
+            - "traefik.http.routers.user.middlewares=cb-user,bulkhead-user,cors-user"
+            # CORS via Traefik (para dashboard desde file://)
+            - "traefik.http.middlewares.cors-user.headers.accesscontrolalloworiginlist=*"
+            - "traefik.http.middlewares.cors-user.headers.accesscontrolallowmethods=GET,POST,OPTIONS"
+            - "traefik.http.middlewares.cors-user.headers.accesscontrolallowheaders=Content-Type,Authorization"
+            - "traefik.http.middlewares.cors-user.headers.addvaryheader=true"
         environment:
             - FLASK_ENV=production
-            - PERSISTENCE_URL=${PERSISTENCE_URL}
-            - REDIS_URL=${REDIS_URL}
+            - PERSISTENCE_URL=http://persistence-java.universidad.localhost:8080
+            - REDIS_URL=redis://redis:6379/0
 #TODO arriba
 networks:
     notebookum-network:

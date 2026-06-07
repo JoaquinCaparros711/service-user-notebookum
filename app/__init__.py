@@ -1,9 +1,19 @@
 from flask import Flask
+from flask_cors import CORS
 from .config import Config
+
+_CORS_ORIGINS = [
+    "https://api.universidad.localhost",
+    "http://localhost",
+    r"http://localhost:\d+",
+    "null",  # file:// pages
+]
+
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    CORS(app, origins=_CORS_ORIGINS, supports_credentials=True)
 
     from .routes.users import users_bp
     app.register_blueprint(users_bp)
