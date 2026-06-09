@@ -40,4 +40,7 @@ def create_app(config_class=Config):
     def health_check():
         return {"status": "ok", "service": "user"}, 200
 
+    from .utils.consul import register_user
+    register_user()
+
     return app
