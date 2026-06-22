@@ -17,6 +17,7 @@ from app.utils.errors import (
 from app.utils.jwt_handler import JWTHandler, require_auth, InvalidTokenError
 
 users_bp = Blueprint("users", __name__, url_prefix="/api/v1/users")
+user_service = UserService()
 
 
 @users_bp.post("")
@@ -26,7 +27,7 @@ def create_user():
 
     try:
         # Validate user data using UserService
-        validated_data = UserService.validate_user_data(data)
+        validated_data = user_service.validate_user_data(data)
         email = validated_data["email"]
         name = validated_data["name"]
         password = validated_data["password"]
@@ -34,7 +35,7 @@ def create_user():
         current_app.logger.info(f"===> [USER-SERVICE] 👤 Creating user - Email: {email}, Name: {name}")
 
         # Create user using UserService
-        user_data = UserService.create_user(email, name, password)
+        user_data = user_service.create_user(email, name, password)
 
         current_app.logger.info(f"===> [USER-SERVICE] ✅ User created - ID: {user_data.get('id')}, Name: {user_data.get('name')}")
 
@@ -61,14 +62,14 @@ def login():
     data = request.get_json()
 
     try:
-        validated_data = UserService.validate_login_data(data)
+        validated_data = user_service.validate_login_data(data)
         email = validated_data["email"]
         password = validated_data["password"]
 
         current_app.logger.info(f"===> [USER-SERVICE] 🔑 Login attempt for email: {email}")
 
         # Authenticate user
-        user_data = UserService.authenticate_user(email, password)
+        user_data = user_service.authenticate_user(email, password)
         user_id = user_data.get("id")
 
         # Generate tokens
@@ -163,7 +164,7 @@ def get_user(user_id: int):
     """Retrieve a user by ID"""
     try:
         current_app.logger.info(f"===> [USER-SERVICE] 🔍 Fetching user: {user_id}")
-        user_data = UserService.get_user_by_id(user_id)
+        user_data = user_service.get_user_by_id(user_id)
 
         if not user_data:
             current_app.logger.warning(f"===> [USER-SERVICE] ❌ User not found: {user_id}")
@@ -198,7 +199,7 @@ def update_user(user_id: int):
 
         current_app.logger.info(f"===> [USER-SERVICE] ✏️ Updating user: {user_id}")
 
-        user_data = UserService.update_user(user_id, email=email, name=name, password=password)
+        user_data = user_service.update_user(user_id, email=email, name=name, password=password)
 
         current_app.logger.info(f"===> [USER-SERVICE] ✅ User updated: {user_id}")
         response = jsonify(user_data)
@@ -225,7 +226,7 @@ def delete_user(user_id: int):
     try:
         current_app.logger.info(f"===> [USER-SERVICE] 🗑️ Deleting user: {user_id}")
 
-        UserService.delete_user(user_id)
+        user_service.delete_user(user_id)
 
         current_app.logger.info(f"===> [USER-SERVICE] ✅ User deleted: {user_id}")
         response = jsonify({"message": f"User {user_id} deleted successfully"})
@@ -247,7 +248,7 @@ def delete_user(user_id: int):
 def ping_redis():
     """Verify Redis connection"""
     try:
-        r = UserService._get_redis_client()
+        r = user_service._get_redis_client()
         if r and r.ping():
             return jsonify({"status": "healthy", "message": "Successfully connected to Redis"}), 200
         else:

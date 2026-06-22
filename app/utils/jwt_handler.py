@@ -1,10 +1,11 @@
 """JWT token generation and validation utilities"""
 
-import jwt
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
 from functools import wraps
-from flask import current_app, request, jsonify
+from typing import Any, Dict, Optional
+
+from flask import current_app, jsonify, request
+import jwt
 
 
 class JWTError(Exception):
